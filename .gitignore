@@ -1,0 +1,12 @@
+# Node/Next.js
+node_modules
+.next
+out
+dist
+.DS_Store
+
+# Env & platform
+.env
+.env.*
+!.env.example
+.vercel

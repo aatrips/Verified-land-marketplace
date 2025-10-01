@@ -16,7 +16,7 @@ export default function NavBar() {
   return (
     <header className="border-b bg-white/90 backdrop-blur">
       <nav className="mx-auto max-w-6xl px-4 h-14 flex items-center gap-6">
-        <span className="font-semibold">Sree Ram Reality</span>
+        <Link href="/" className="font-semibold">TrueAcre</Link>
         <ul className="flex items-center gap-4 text-sm">
           {links.map(l => {
             const active = pathname === l.href || (l.href !== '/' && pathname?.startsWith(l.href));

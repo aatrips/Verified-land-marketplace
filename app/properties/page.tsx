@@ -1,184 +1,91 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import PropertyCard, { PropertyRow } from '@/components/PropertyCard';
 
 type SortKey = 'new' | 'old' | 'priceAsc' | 'priceDesc';
 
-const PAGE_SIZE = 12;
-
-export default function Properties() {
+export default function PropertiesPage() {
   const [rows, setRows] = useState<PropertyRow[]>([]);
-  const [total, setTotal] = useState<number | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
-
-  // UI filters
-  const [citySearch, setCitySearch] = useState('');
-  const [onlyVerified, setOnlyVerified] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortKey>('new');
 
-  // Pagination
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
-
-  // Debounce city typing (300ms)
-  const debouncedCity = useMemo(() => citySearch.trim().toLowerCase(), [citySearch]);
-  const [debounced, setDebounced] = useState(debouncedCity);
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(debouncedCity), 300);
-    return () => clearTimeout(t);
-  }, [debouncedCity]);
-
-  // Build and run the query for a given page
-  async function fetchPage(targetPage: number, opts?: { append?: boolean }) {
-    const append = opts?.append ?? false;
-    try {
-      const supabase = getSupabaseClient();
-
-      let q = supabase
+    const load = async () => {
+      setLoading(true);
+      // Pull the fields you actually use in cards
+      const { data, error } = await supabase
         .from('properties')
-        .select('id,title,city,state,hero_url,created_at,verification,price', {
-          count: append ? 'exact' : 'exact', // keep count (cheap enough)
-        });
+        .select('id,title,city,state,hero_url,created_at,status,price')
+        .order('created_at', { ascending: false });
 
-      if (onlyVerified) q = q.eq('verification', true);
-      if (debounced) q = q.ilike('city', `%${debounced}%`);
-
-      switch (sort) {
-        case 'new':
-          q = q.order('created_at', { ascending: false });
-          break;
-        case 'old':
-          q = q.order('created_at', { ascending: true });
-          break;
-        case 'priceAsc':
-          q = q.order('price', { ascending: true, nullsFirst: true }).order('created_at', { ascending: false });
-          break;
-        case 'priceDesc':
-          q = q.order('price', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
-          break;
-      }
-
-      const from = targetPage * PAGE_SIZE;
-      const to = from + PAGE_SIZE - 1;
-      q = q.range(from, to);
-
-      const { data, error, count } = await q;
-      if (error) throw error;
-
-      const list = (data ?? []) as PropertyRow[];
-      setTotal(typeof count === 'number' ? count : null);
-
-      if (append) {
-        setRows(prev => [...prev, ...list]);
+      if (error) {
+        console.error('Error fetching properties:', error);
+        setRows([]);
       } else {
-        setRows(list);
+        setRows((data ?? []) as unknown as PropertyRow[]);
       }
+      setLoading(false);
+    };
 
-      // If fewer than a full page came back, there’s no more
-      setHasMore(list.length === PAGE_SIZE);
+    load();
+  }, []);
 
-      // Update current page only after successful fetch
-      setPage(targetPage);
-    } catch (e: any) {
-      setErr(e?.message ?? 'Failed to load properties');
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    switch (sort) {
+      case 'old':
+        return copy.sort(
+          (a, b) =>
+            new Date(a.created_at ?? 0).getTime() -
+            new Date(b.created_at ?? 0).getTime()
+        );
+      case 'priceAsc':
+        return copy.sort(
+          (a: any, b: any) => (a?.price ?? 0) - (b?.price ?? 0)
+        );
+      case 'priceDesc':
+        return copy.sort(
+          (a: any, b: any) => (b?.price ?? 0) - (a?.price ?? 0)
+        );
+      case 'new':
+      default:
+        return copy.sort(
+          (a, b) =>
+            new Date(b.created_at ?? 0).getTime() -
+            new Date(a.created_at ?? 0).getTime()
+        );
     }
-  }
-
-  // Initial load & whenever filters/sort change → reset to page 0
-  useEffect(() => {
-    setErr(null);
-    setHasMore(true);
-    setPage(0);
-    setLoading(true);
-    fetchPage(0, { append: false }).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debounced, onlyVerified, sort]);
-
-  async function onLoadMore() {
-    setLoadingMore(true);
-    await fetchPage(page + 1, { append: true });
-    setLoadingMore(false);
-  }
+  }, [rows, sort]);
 
   return (
-    <main className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-bold mb-4">Browse Properties</h1>
-
-      {/* Filters */}
-      <div className="mb-4 flex flex-col sm:flex-row gap-3 sm:items-center">
-        <div className="flex-1">
-          <input
-            className="w-full rounded-lg border p-2"
-            placeholder="Search by city (e.g., Pune)"
-            value={citySearch}
-            onChange={(e) => setCitySearch(e.target.value)}
-          />
-        </div>
-
-        <label className="inline-flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={onlyVerified}
-            onChange={(e) => setOnlyVerified(e.target.checked)}
-          />
-          Verified only
-        </label>
-
-        <div>
-          <select
-            className="rounded-lg border p-2 text-sm"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-          >
-            <option value="new">Newest first</option>
-            <option value="old">Oldest first</option>
-            <option value="priceAsc">Price: Low → High</option>
-            <option value="priceDesc">Price: High → Low</option>
-          </select>
-        </div>
+    <main className="p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">All Properties</h1>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          className="border rounded px-3 py-2 text-sm"
+        >
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="priceAsc">Price: Low → High</option>
+          <option value="priceDesc">Price: High → Low</option>
+        </select>
       </div>
 
-      {/* Results meta */}
-      <div className="mb-3 text-sm text-gray-600">
-        {loading && page === 0
-          ? 'Loading…'
-          : err
-          ? <span className="text-red-600">{err}</span>
-          : (
-            <span>{total ?? rows.length} results</span>
-          )}
-      </div>
-
-      {/* Grid */}
-      {rows.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rows.map((p) => (
-              <PropertyCard key={p.id} p={p} />
-            ))}
-          </div>
-
-          <div className="flex justify-center my-6">
-            {hasMore ? (
-              <button
-                onClick={onLoadMore}
-                disabled={loadingMore}
-                className="rounded-lg border px-4 py-2 hover:bg-gray-50 disabled:opacity-60"
-              >
-                {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
-            ) : (
-              <span className="text-sm text-gray-500">No more results</span>
-            )}
-          </div>
-        </>
-      ) : !loading && !err ? (
-        <p className="text-gray-500">No properties found.</p>
-      ) : null}
+      {loading ? (
+        <p>Loading…</p>
+      ) : sorted.length === 0 ? (
+        <p>No properties found.</p>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {sorted.map((p) => (
+            <PropertyCard key={p.id ?? Math.random()} property={p} />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

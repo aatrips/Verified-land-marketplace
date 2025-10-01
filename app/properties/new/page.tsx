@@ -1,24 +1,22 @@
-// app/properties/[id]/page.tsx
+'use client';
+
+import { useSearchParams } from 'next/navigation';
 import Uploader from './Uploader';
 import ImageGrid from './ImageGrid';
-import { createClient } from '@supabase/supabase-js';
 
-export default async function PropertyPage({ params }: { params: { id: string } }) {
-  const id = params.id;
+export default function NewPropertyImagesPage() {
+  const searchParams = useSearchParams();
+  const id = (searchParams.get('id') || '').trim();
+  const initialHasImages = (searchParams.get('hasImages') || '').toLowerCase() === 'true';
 
-  // minimal server-side supabase client (no cookies)
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!
-  );
-
-  // count images for this property on the server
-  const { count } = await supabase
-    .from('property_images')                        // TABLE (underscore)
-    .select('id', { count: 'exact', head: true })
-    .eq('property_id', id);
-
-  const initialHasImages = (count ?? 0) > 0;
+  if (!id) {
+    return (
+      <div className="p-6">
+        <h1 className="text-xl font-semibold mb-2">Property Images</h1>
+        <p className="text-red-600">Missing property id. Open this page with <code>?id=&lt;property-id&gt;</code>.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">

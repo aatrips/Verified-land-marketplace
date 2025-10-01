@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabaseClient } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import VerificationBadge from '@/components/VerificationBadge';
 
 type PRow = {
@@ -9,55 +9,61 @@ type PRow = {
   title: string;
   city: string;
   state: string;
-  hero_url: string | null;
-  created_at: string;
-  verification: boolean;
-  price?: number | null;
-  // description?: string | null; // not selecting it anymore
+  hero_url?: string;
+  status?: string;
+  created_at?: string;
 };
 
 export default function PropertyDetail({ params }: { params: { id: string } }) {
-  const [p, setP] = useState<PRow | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+  const [property, setProperty] = useState<PRow | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = getSupabaseClient();
-    supabase
-      .from('properties')
-      .select('id,title,city,state,hero_url,created_at,verification,price') // removed description
-      .eq('id', params.id)
-      .single()
-      .then(({ data, error }) => {
-        if (error) setErr(error.message);
-        setP(data as PRow);
-      });
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', params.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading property:', error);
+        setProperty(null);
+      } else {
+        setProperty(data as PRow);
+      }
+      setLoading(false);
+    };
+
+    load();
   }, [params.id]);
 
-  if (err) return <main><p className="text-red-600">{err}</p></main>;
-  if (!p) return <main><p className="text-gray-500">Loading…</p></main>;
+  if (loading) return <p className="p-6">Loading property…</p>;
+  if (!property) return <p className="p-6">Property not found.</p>;
 
   return (
-    <main className="space-y-6">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">{p.title}</h1>
-          <VerificationBadge verified={p.verification} />
-        </div>
-        <p className="text-sm text-gray-600">{p.city}, {p.state}</p>
-      </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-2">{property.title}</h1>
+      <p className="text-gray-600 mb-4">
+        {property.city}, {property.state}
+      </p>
 
-      <div className="aspect-[16/9] w-full overflow-hidden rounded-2xl bg-gray-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {p.hero_url ? (
-          <img src={p.hero_url} alt={p.title} className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full grid place-items-center text-sm text-gray-500">No image</div>
-        )}
-      </div>
-
-      {typeof p.price === 'number' && (
-        <p className="text-lg font-semibold">Price: ₹ {p.price.toLocaleString('en-IN')}</p>
+      {property.hero_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={property.hero_url}
+          alt={property.title}
+          className="rounded-xl mb-4 w-full max-w-2xl"
+        />
+      ) : (
+        <div className="rounded-xl bg-gray-200 p-12 mb-4">No image</div>
       )}
-    </main>
+
+<VerificationBadge verified={(property.status ?? '').toUpperCase() === 'VERIFIED'} />
+      <p className="text-sm text-gray-400 mt-4">
+        Added: {property.created_at ? new Date(property.created_at).toLocaleString() : '—'}
+      </p>
+    </div>
   );
 }

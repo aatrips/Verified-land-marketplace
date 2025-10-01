@@ -6,8 +6,8 @@ import { ReactNode } from 'react';
 import NavBar from '@/components/NavBar';
 
 export const metadata: Metadata = {
-  title: 'Sree Ram Reality',
-  description: 'Property listings',
+  title: 'TrueAcre',
+  description: 'TrueAcre — browse, list, and verify land & property.',
 };
 
 export const viewport: Viewport = {
@@ -20,7 +20,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        {/* Load public env BEFORE any client code runs */}
         <Script src="/env.js" strategy="beforeInteractive" />
       </head>
       <body className="min-h-screen bg-white text-gray-900">

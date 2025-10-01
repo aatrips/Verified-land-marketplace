@@ -1,23 +1,12 @@
 // lib/supabaseClient.ts
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-let singleton: SupabaseClient | null = null;
+// Use Vercel envs when present; fall back to hardcoded dev values so StackBlitz/ephemeral envs don't crash
+let supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://mehpjxoheirtktriokon.supabase.co​';
+let supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laHBqeG9oZWlydGt0cmlva29uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMzA2NzgsImV4cCI6MjA3NDcwNjY3OH0.3cFNnsnE12WE8Xhi6qyrieN04yiYKB7UhJYtpmZaq4o';
 
-export function getSupabaseClient(): SupabaseClient {
-  if (singleton) return singleton;
+// Create a single shared client
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-  // Read public keys from window.__env (StackBlitz-friendly)
-  if (typeof window === 'undefined') {
-    throw new Error('getSupabaseClient() must be called in the browser (client components).');
-  }
-  const w = window as unknown as { __env?: Record<string, string> };
-  const url = w.__env?.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = w.__env?.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anon) {
-    throw new Error('Public Supabase env missing. Ensure public/env.js is loaded in layout <head>.');
-  }
-
-  singleton = createClient(url, anon);
-  return singleton;
-}
+// ✅ Backward-compat shim so old code still works without edits
+export const getSupabaseClient = () => supabase;

@@ -1,30 +1,32 @@
 // app/layout.tsx
 import './globals.css';
-import type { Metadata, Viewport } from 'next';
+import type { Metadata } from 'next';
 import Script from 'next/script';
 import { ReactNode } from 'react';
 import NavBar from '@/components/NavBar';
 
 export const metadata: Metadata = {
-  title: 'TrueAcre',
-  description: 'TrueAcre — browse, list, and verify land & property.',
+  title: 'BuyersChoice',
+  description: 'Verified land marketplace',
 };
 
-export const viewport: Viewport = {
+// It's fine to omit the explicit Viewport type if your Next types don't export it
+export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#000000',
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <Script src="/env.js" strategy="beforeInteractive" />
+        {/* If you previously used beforeInteractive, switch to afterInteractive in App Router */}
+        {/* <Script src="/your-script.js" strategy="afterInteractive" /> */}
       </head>
-      <body className="min-h-screen bg-white text-gray-900">
+      <body>
         <NavBar />
-        <div className="mx-auto max-w-6xl px-4 py-6">{children}</div>
+        {children}
       </body>
     </html>
   );

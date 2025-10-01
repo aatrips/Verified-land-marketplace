@@ -1,38 +1,52 @@
-// components/PropertyCard.tsx
+'use client';
+
 import Link from 'next/link';
-import VerificationBadge from './VerificationBadge';
 
-export interface PropertyRow {
-  id: string;
-  title: string;
-  city: string;
-  state: string;
-  hero_url: string | null;
-  created_at: string;
-  verification: boolean;     // 👈 back to boolean
-  price?: number | null;
-}
+export type PropertyRow = {
+  id?: string;
+  title?: string;
+  city?: string;
+  state?: string;
+  hero_url?: string;
+  status?: string;
+  created_at?: string;
+};
 
-export default function PropertyCard({ p }: { p: PropertyRow }) {
+export default function PropertyCard({ property }: { property: PropertyRow }) {
+  if (!property || !property.id) {
+    return (
+      <div className="p-4 border rounded">
+        <p className="text-gray-500">Invalid property data</p>
+      </div>
+    );
+  }
+
   return (
-    <Link href={`/properties/${p.id}`} className="block rounded-2xl border hover:shadow-md transition">
+    <Link
+      href={`/properties/${property.id}`}
+      className="block rounded-2xl border hover:shadow-md transition"
+    >
       <div className="aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {p.hero_url ? (
-          <img src={p.hero_url} alt={p.title} className="h-full w-full object-cover" />
+        {property.hero_url ? (
+          <img
+            src={property.hero_url}
+            alt={property.title || 'Property image'}
+            className="h-full w-full object-cover"
+          />
         ) : (
-          <div className="h-full w-full grid place-items-center text-sm text-gray-500">No image</div>
+          <div className="h-full w-full flex items-center justify-center text-gray-400">
+            No image
+          </div>
         )}
       </div>
-      <div className="p-4 space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-base font-semibold line-clamp-1">{p.title}</h3>
-          <VerificationBadge verified={p.verification} />
-        </div>
-        <p className="text-sm text-gray-600">{p.city}, {p.state}</p>
-        {typeof p.price === 'number' && <p className="text-sm font-medium">₹ {p.price.toLocaleString('en-IN')}</p>}
-        <p className="text-xs text-gray-400">
-          Listed on {new Date(p.created_at).toLocaleDateString('en-IN')}
+      <div className="p-4">
+        <h2 className="text-lg font-semibold">{property.title || 'Untitled'}</h2>
+        <p className="text-sm text-gray-500">
+          {property.city}, {property.state}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">
+          Status: {property.status || 'Pending'}
         </p>
       </div>
     </Link>

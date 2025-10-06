@@ -1,32 +1,40 @@
 // app/layout.tsx
 import './globals.css';
-import type { Metadata } from 'next';
-import Script from 'next/script';
-import { ReactNode } from 'react';
 import NavBar from '@/components/NavBar';
+import Footer from '@/components/Footer';
+import type { Metadata } from 'next';
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 export const metadata: Metadata = {
-  title: 'BuyersChoice',
-  description: 'Verified land marketplace',
+  title: 'Buyers Choice Realty',
+  description: 'Where Trust Meets Property',
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: 'Buyers Choice Realty',
+    description: 'Where Trust Meets Property',
+    url: siteUrl,
+    siteName: 'Buyers Choice Realty',
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Buyers Choice Realty',
+    description: 'Where Trust Meets Property',
+  },
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
-// It's fine to omit the explicit Viewport type if your Next types don't export it
-export const viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  themeColor: '#ffffff',
-};
-
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        {/* If you previously used beforeInteractive, switch to afterInteractive in App Router */}
-        {/* <Script src="/your-script.js" strategy="afterInteractive" /> */}
-      </head>
-      <body>
+      <body className="min-h-screen bg-white text-gray-900">
         <NavBar />
-        {children}
+        <main className="max-w-6xl mx-auto px-4 py-6">{children}</main>
+        <Footer />
       </body>
     </html>
   );

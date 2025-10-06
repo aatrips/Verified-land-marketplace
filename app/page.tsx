@@ -8,26 +8,41 @@ import PropertyCard, { PropertyRow } from '@/components/PropertyCard';
 export default function Home() {
   const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verifiedOnly, setVerifiedOnly] = useState(false); // NEW: safe additive filter
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const load = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+
+    // Base query (NOTE: we now select 'verification' as well)
+    let query = supabase
+      .from('properties')
+      .select('id,title,city,state,hero_url,created_at,verification')
+      .order('created_at', { ascending: false });
+
+    // Optional filter: verified only
+    if (verifiedOnly) {
+      query = query.eq('verification', true);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error loading properties:', error);
+      setErrorMsg(error.message);
+      setProperties([]);
+    } else {
+      // Cast to PropertyRow (backward-compatible: PropertyCard can use status or verification)
+      setProperties((data ?? []) as unknown as PropertyRow[]);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('properties')
-        .select('id,title,city,state,hero_url,created_at,status')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error loading properties:', error);
-        setProperties([]);
-      } else {
-        setProperties((data ?? []) as unknown as PropertyRow[]);
-      }
-      setLoading(false);
-    };
-
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verifiedOnly]); // re-fetch when toggle changes
 
   return (
     <main>
@@ -86,9 +101,24 @@ export default function Home() {
 
       {/* Latest Properties */}
       <section className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="text-2xl font-semibold mb-6">Latest Properties</h2>
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Latest Properties</h2>
+
+          {/* NEW: Verified-only toggle (additive, won’t break existing flows) */}
+          <label className="text-sm flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={verifiedOnly}
+              onChange={(e) => setVerifiedOnly(e.target.checked)}
+            />
+            <span>Verified only</span>
+          </label>
+        </div>
+
         {loading ? (
           <p>Loading…</p>
+        ) : errorMsg ? (
+          <p className="text-red-600 text-sm">Error: {errorMsg}</p>
         ) : properties.length === 0 ? (
           <p>No properties yet.</p>
         ) : (

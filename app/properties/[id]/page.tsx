@@ -1,5 +1,5 @@
 'use client';
-
+import ShareButtons from '@/components/ShareButtons';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import VerificationBadge from '@/components/VerificationBadge';
@@ -10,7 +10,8 @@ type PRow = {
   city: string;
   state: string;
   hero_url?: string;
-  status?: string;
+  status?: string;          // backward-compat
+  verification?: boolean;   // single source of truth when present
   created_at?: string;
 };
 
@@ -42,6 +43,12 @@ export default function PropertyDetail({ params }: { params: { id: string } }) {
   if (loading) return <p className="p-6">Loading property…</p>;
   if (!property) return <p className="p-6">Property not found.</p>;
 
+  // Prefer boolean verification when available; else fallback to status string
+  const isVerified =
+    typeof property.verification === 'boolean'
+      ? property.verification
+      : (property.status ?? '').toUpperCase() === 'VERIFIED';
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-2">{property.title}</h1>
@@ -60,10 +67,22 @@ export default function PropertyDetail({ params }: { params: { id: string } }) {
         <div className="rounded-xl bg-gray-200 p-12 mb-4">No image</div>
       )}
 
-<VerificationBadge verified={(property.status ?? '').toUpperCase() === 'VERIFIED'} />
+      <VerificationBadge verified={isVerified} />
+
       <p className="text-sm text-gray-400 mt-4">
         Added: {property.created_at ? new Date(property.created_at).toLocaleString() : '—'}
       </p>
+
+      {/* Share section (new) */}
+      <div className="mt-6 rounded-xl border p-4">
+        <div className="font-medium mb-2">Share this property</div>
+        <ShareButtons
+          id={property.id}
+          title={property.title}
+          city={property.city}
+          state={property.state}
+        />
+      </div>
     </div>
   );
 }

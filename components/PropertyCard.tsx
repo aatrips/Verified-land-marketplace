@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import InterestForm from '@/components/InterestForm';
 import ShareButtons from '@/components/ShareButtons';
+import { useI18n } from '@/lib/i18n';
 
 export type PropertyRow = {
   id?: string;
@@ -17,36 +18,33 @@ export type PropertyRow = {
 };
 
 export default function PropertyCard({ property }: { property: PropertyRow }) {
-  // Always declare hooks first (no early returns before hooks)
+  const { t } = useI18n();
+
+  // Hooks first
   const [showForm, setShowForm] = useState(false);
   const [interested, setInterested] = useState(false);
 
-  // Derive id safely for hooks & handlers
   const id = property?.id ?? null;
 
-  // Load "already interested" flag from localStorage after mount
   useEffect(() => {
-    if (!id) return; // safe guard inside the hook, not outside
+    if (!id) return;
     try {
       const v = localStorage.getItem(`lead:${id}`);
       setInterested(!!v);
-    } catch {
-      /* no-op */
-    }
+    } catch {}
   }, [id]);
 
-  // Determine verification label without returning early
   const verificationLabel =
     typeof property?.verification === 'boolean'
       ? property?.verification
-        ? 'VERIFIED'
-        : 'PENDING'
-      : property?.status || 'Pending';
+        ? t('status.VERIFIED')
+        : t('status.PENDING')
+      : property?.status || t('status.Pending');
 
   const verificationClass =
-    verificationLabel === 'VERIFIED'
+    verificationLabel === t('status.VERIFIED')
       ? 'text-green-600'
-      : verificationLabel === 'PENDING' || verificationLabel === 'Pending'
+      : verificationLabel === t('status.PENDING') || verificationLabel === t('status.Pending')
       ? 'text-yellow-600'
       : 'text-gray-400';
 
@@ -54,14 +52,11 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
     if (!id) return;
     try {
       localStorage.setItem(`lead:${id}`, JSON.stringify({ ts: Date.now() }));
-    } catch {
-      /* no-op */
-    }
+    } catch {}
     setInterested(true);
     setShowForm(false);
   };
 
-  // Now it’s safe to branch on invalid data AFTER all hooks
   if (!id) {
     return (
       <div className="p-4 border rounded">
@@ -82,22 +77,22 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
           {property?.hero_url ? (
             <img
               src={property.hero_url}
-              alt={property?.title || 'Property image'}
+              alt={property?.title || t('card.untitled')}
               className="h-full w-full object-cover"
             />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-gray-400">
-              No image
+              {t('card.noImage')}
             </div>
           )}
         </div>
         <div className="p-4">
-          <h2 className="text-lg font-semibold">{property?.title || 'Untitled'}</h2>
+          <h2 className="text-lg font-semibold">{property?.title || t('card.untitled')}</h2>
           <p className="text-sm text-gray-500">
             {property?.city}, {property?.state}
           </p>
           <p className={`text-xs text-gray-400 mt-1 ${verificationClass}`}>
-            Status: {verificationLabel}
+            {t('label.status')}: {verificationLabel}
           </p>
         </div>
       </Link>
@@ -106,20 +101,20 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
       <div className="px-4">
         {interested ? (
           <div className="mt-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-3 text-sm text-green-800">
-            Interest recorded — we’ll contact you soon.
+            {t('message.interestRecorded')}
           </div>
         ) : !showForm ? (
           <button
             className="mt-2 w-full rounded border px-3 py-2 text-sm hover:bg-gray-50"
             onClick={() => setShowForm(true)}
-            aria-label={`I'm interested in ${property?.title ?? 'property'}`}
+            aria-label={`${t('cta.interested')} — ${property?.title ?? ''}`}
           >
-            I’m interested
+            {t('cta.interested')}
           </button>
         ) : (
           <div className="mt-2 rounded-2xl border px-3 py-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-medium">I’m interested</div>
+              <div className="text-sm font-medium">{t('cta.interested')}</div>
               <button
                 className="text-xs text-gray-500 hover:underline"
                 onClick={() => setShowForm(false)}

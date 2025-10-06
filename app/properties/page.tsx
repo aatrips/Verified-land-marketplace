@@ -1,88 +1,96 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import PropertyCard, { PropertyRow } from '@/components/PropertyCard';
 
-type SortKey = 'new' | 'old' | 'priceAsc' | 'priceDesc';
-
 export default function PropertiesPage() {
-  const [rows, setRows] = useState<PropertyRow[]>([]);
+  const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState<SortKey>('new');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Optional lightweight filters (safe additives)
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [q, setQ] = useState('');
+
+  const load = async () => {
+    setLoading(true);
+    setErrorMsg(null);
+
+    let query = supabase
+      .from('properties')
+      .select('id,title,city,state,hero_url,verification,created_at') // <- no status
+      .order('created_at', { ascending: false });
+
+    if (verifiedOnly) query = query.eq('verification', true);
+
+    // Simple client-side text filter after fetch (keeps DB query simple)
+    const { data, error } = await query;
+
+    if (error) {
+      setErrorMsg(error.message);
+      setProperties([]);
+    } else {
+      const rows = (data ?? []) as PropertyRow[];
+      const filtered =
+        q.trim().length === 0
+          ? rows
+          : rows.filter((r) => {
+              const hay = `${r.title ?? ''} ${r.city ?? ''} ${r.state ?? ''}`.toLowerCase();
+              return hay.includes(q.toLowerCase());
+            });
+      setProperties(filtered);
+    }
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      // Pull the fields you actually use in cards
-      const { data, error } = await supabase
-        .from('properties')
-        .select('id,title,city,state,hero_url,created_at,status,price')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching properties:', error);
-        setRows([]);
-      } else {
-        setRows((data ?? []) as unknown as PropertyRow[]);
-      }
-      setLoading(false);
-    };
-
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verifiedOnly]);
 
-  const sorted = useMemo(() => {
-    const copy = [...rows];
-    switch (sort) {
-      case 'old':
-        return copy.sort(
-          (a, b) =>
-            new Date(a.created_at ?? 0).getTime() -
-            new Date(b.created_at ?? 0).getTime()
-        );
-      case 'priceAsc':
-        return copy.sort(
-          (a: any, b: any) => (a?.price ?? 0) - (b?.price ?? 0)
-        );
-      case 'priceDesc':
-        return copy.sort(
-          (a: any, b: any) => (b?.price ?? 0) - (a?.price ?? 0)
-        );
-      case 'new':
-      default:
-        return copy.sort(
-          (a, b) =>
-            new Date(b.created_at ?? 0).getTime() -
-            new Date(a.created_at ?? 0).getTime()
-        );
-    }
-  }, [rows, sort]);
+  // Re-run client filter on keystrokes without refetch
+  useEffect(() => {
+    // debounce could be added if needed; for now re-use load for simplicity
+    const t = setTimeout(load, 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   return (
-    <main className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">All Properties</h1>
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortKey)}
-          className="border rounded px-3 py-2 text-sm"
-        >
-          <option value="new">Newest first</option>
-          <option value="old">Oldest first</option>
-          <option value="priceAsc">Price: Low → High</option>
-          <option value="priceDesc">Price: High → Low</option>
-        </select>
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold">Browse Properties</h1>
+
+        <div className="flex items-center gap-3">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by title, city, state"
+            className="border rounded-lg px-3 py-2 text-sm w-64"
+          />
+          <label className="text-sm flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={verifiedOnly}
+              onChange={(e) => setVerifiedOnly(e.target.checked)}
+            />
+            <span>Verified only</span>
+          </label>
+        </div>
       </div>
 
       {loading ? (
         <p>Loading…</p>
-      ) : sorted.length === 0 ? (
+      ) : errorMsg ? (
+        <p className="text-red-600 text-sm">Error: {errorMsg}</p>
+      ) : properties.length === 0 ? (
         <p>No properties found.</p>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((p) => (
-            <PropertyCard key={p.id ?? Math.random()} property={p} />
+          {properties.map((p) => (
+            <PropertyCard key={p.id} property={p} />
           ))}
         </div>
       )}

@@ -1,17 +1,17 @@
-// components/VerificationBadge.tsx
 'use client';
 
-export default function VerificationBadge({ verified }: { verified: boolean }) {
-  if (!verified) {
-    return (
-      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-800">
-        In review
-      </span>
-    );
-  }
+export default function VerificationBadge({ verified }: { verified?: boolean }) {
+  const isOk = !!verified;
   return (
-    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800">
-      Verified
+    <span
+      className={`inline-block text-xs px-2 py-1 rounded border ${
+        isOk
+          ? 'text-green-800 bg-green-100 border-green-200'
+          : 'text-yellow-800 bg-yellow-100 border-yellow-200'
+      }`}
+      aria-label={isOk ? 'Verified' : 'Pending'}
+    >
+      {isOk ? 'VERIFIED' : 'PENDING'}
     </span>
   );
 }

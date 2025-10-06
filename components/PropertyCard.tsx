@@ -11,43 +11,37 @@ export type PropertyRow = {
   city?: string;
   state?: string;
   hero_url?: string;
-  /** New optional boolean for single-source verification */
-  verification?: boolean;
-  /** Backward-compat: keep status */
-  status?: string;
+  verification?: boolean; // preferred
+  status?: string;        // backward-compat
   created_at?: string;
 };
 
 export default function PropertyCard({ property }: { property: PropertyRow }) {
+  // Always declare hooks first (no early returns before hooks)
   const [showForm, setShowForm] = useState(false);
   const [interested, setInterested] = useState(false);
 
-  if (!property || !property.id) {
-    return (
-      <div className="p-4 border rounded">
-        <p className="text-gray-500">Invalid property data</p>
-      </div>
-    );
-  }
+  // Derive id safely for hooks & handlers
+  const id = property?.id ?? null;
 
-  // Remember interest per property in localStorage
-  const localKey = `lead:${property.id}`;
+  // Load "already interested" flag from localStorage after mount
   useEffect(() => {
+    if (!id) return; // safe guard inside the hook, not outside
     try {
-      const v = typeof window !== 'undefined' ? localStorage.getItem(localKey) : null;
+      const v = localStorage.getItem(`lead:${id}`);
       setInterested(!!v);
     } catch {
       /* no-op */
     }
-  }, [localKey]);
+  }, [id]);
 
-  // Prefer boolean verification; fallback to status string
+  // Determine verification label without returning early
   const verificationLabel =
-    typeof property.verification === 'boolean'
-      ? property.verification
+    typeof property?.verification === 'boolean'
+      ? property?.verification
         ? 'VERIFIED'
         : 'PENDING'
-      : property.status || 'Pending';
+      : property?.status || 'Pending';
 
   const verificationClass =
     verificationLabel === 'VERIFIED'
@@ -57,8 +51,9 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
       : 'text-gray-400';
 
   const handleInterestSuccess = () => {
+    if (!id) return;
     try {
-      localStorage.setItem(localKey, JSON.stringify({ ts: Date.now() }));
+      localStorage.setItem(`lead:${id}`, JSON.stringify({ ts: Date.now() }));
     } catch {
       /* no-op */
     }
@@ -66,19 +61,28 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
     setShowForm(false);
   };
 
+  // Now it’s safe to branch on invalid data AFTER all hooks
+  if (!id) {
+    return (
+      <div className="p-4 border rounded">
+        <p className="text-gray-500">Invalid property data</p>
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Card (existing) */}
+      {/* Card */}
       <Link
-        href={`/properties/${property.id}`}
+        href={`/properties/${id}`}
         className="block rounded-2xl border hover:shadow-md transition"
       >
         <div className="aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-gray-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {property.hero_url ? (
+          {property?.hero_url ? (
             <img
               src={property.hero_url}
-              alt={property.title || 'Property image'}
+              alt={property?.title || 'Property image'}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -88,9 +92,9 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
           )}
         </div>
         <div className="p-4">
-          <h2 className="text-lg font-semibold">{property.title || 'Untitled'}</h2>
+          <h2 className="text-lg font-semibold">{property?.title || 'Untitled'}</h2>
           <p className="text-sm text-gray-500">
-            {property.city}, {property.state}
+            {property?.city}, {property?.state}
           </p>
           <p className={`text-xs text-gray-400 mt-1 ${verificationClass}`}>
             Status: {verificationLabel}
@@ -98,7 +102,7 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
         </div>
       </Link>
 
-      {/* Interest area (existing) */}
+      {/* Interest */}
       <div className="px-4">
         {interested ? (
           <div className="mt-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-3 text-sm text-green-800">
@@ -108,7 +112,7 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
           <button
             className="mt-2 w-full rounded border px-3 py-2 text-sm hover:bg-gray-50"
             onClick={() => setShowForm(true)}
-            aria-label={`I'm interested in ${property.title ?? 'property'}`}
+            aria-label={`I'm interested in ${property?.title ?? 'property'}`}
           >
             I’m interested
           </button>
@@ -124,21 +128,21 @@ export default function PropertyCard({ property }: { property: PropertyRow }) {
               </button>
             </div>
             <InterestForm
-              propertyId={property.id}
-              propertyTitle={property.title}
+              propertyId={id}
+              propertyTitle={property?.title}
               onSuccess={handleInterestSuccess}
             />
           </div>
         )}
       </div>
 
-      {/* Share buttons (new) */}
+      {/* Share */}
       <div className="px-4 pb-3">
         <ShareButtons
-          id={property.id as string}
-          title={property.title}
-          city={property.city}
-          state={property.state}
+          id={id}
+          title={property?.title}
+          city={property?.city}
+          state={property?.state}
         />
       </div>
     </div>

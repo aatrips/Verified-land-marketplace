@@ -13,7 +13,7 @@ const dictionaries: Dictionaries = {
     'label.status': 'Status',
     'card.noImage': 'No image',
     'card.untitled': 'Untitled',
-    // CTA
+    // CTA / messages
     'cta.interested': 'I’m interested',
     'message.interestRecorded': 'Interest recorded — we’ll contact you soon.',
     // Home hero
@@ -33,13 +33,23 @@ const dictionaries: Dictionaries = {
     'status.VERIFIED': 'VERIFIED',
     'status.PENDING': 'PENDING',
     'status.Pending': 'Pending',
+    // About page
+    'about.title': 'About Buyers Choice Realty',
+    'about.p1': 'We bring authentic, verified land deals—no surprises.',
+    'about.p2': 'Our operations team validates documents, titles, and ownership before a listing goes live.',
+    'about.p3': 'We manage the paperwork end-to-end and support you even after purchase.',
+    'about.list.title': 'What we do',
+    'about.list.trust': 'Authentic deals backed by verification',
+    'about.list.end2end': 'End-to-end paperwork and registration',
+    'about.list.aftercare': 'Post-purchase help (mutation, utilities, etc.)',
   },
+
   hi: {
     // Generic
     'label.status': 'स्थिति',
     'card.noImage': 'कोई छवि नहीं',
     'card.untitled': 'शीर्षक रहित',
-    // CTA
+    // CTA / messages
     'cta.interested': 'मुझे रुचि है',
     'message.interestRecorded': 'रुचि दर्ज हो गई — हम जल्द ही आपसे संपर्क करेंगे।',
     // Home hero
@@ -59,6 +69,15 @@ const dictionaries: Dictionaries = {
     'status.VERIFIED': 'सत्यापित',
     'status.PENDING': 'लंबित',
     'status.Pending': 'लंबित',
+    // About page
+    'about.title': 'बायर्स चॉइस रियल्टी के बारे में',
+    'about.p1': 'हम सत्यापित और भरोसेमंद भूमि सौदे लाते हैं—बिना किसी छिपी बात के।',
+    'about.p2': 'लिस्टिंग लाइव होने से पहले हमारी ऑप्स टीम दस्तावेज़, टाइटल और मालिकाना हक की जाँच करती है।',
+    'about.p3': 'हम पूरा कागज़ी काम एंड-टू-एंड संभालते हैं और खरीद के बाद भी सहायता करते हैं।',
+    'about.list.title': 'हम क्या करते हैं',
+    'about.list.trust': 'सत्यापन से समर्थित प्रामाणिक डील्स',
+    'about.list.end2end': 'एंड-टू-एंड कागज़ी काम और रजिस्ट्रेशन',
+    'about.list.aftercare': 'खरीद के बाद सहायता (म्युटेशन, यूटिलिटीज़ आदि)',
   },
 };
 
@@ -73,18 +92,23 @@ const I18nContext = createContext<I18nCtx | null>(null);
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>('en');
 
+  // Load saved language once after mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem('lang') as Lang | null;
       if (saved === 'en' || saved === 'hi') setLangState(saved);
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const setLang = (l: Lang) => {
     setLangState(l);
     try {
       localStorage.setItem('lang', l);
-    } catch {}
+    } catch {
+      /* noop */
+    }
   };
 
   const t = useMemo(() => {
@@ -95,6 +119,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [lang]);
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
+
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 

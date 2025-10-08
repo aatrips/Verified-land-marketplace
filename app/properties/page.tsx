@@ -1,99 +1,103 @@
+// app/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import PropertyCard, { PropertyRow } from '@/components/PropertyCard';
+import { useI18n } from '@/lib/i18n';
 
-export default function PropertiesPage() {
+export default function Home() {
+  const { t } = useI18n();
   const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  // Optional lightweight filters (safe additives)
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
-  const [q, setQ] = useState('');
-
-  const load = async () => {
-    setLoading(true);
-    setErrorMsg(null);
-
-    let query = supabase
-      .from('properties')
-      .select('id,title,city,state,hero_url,verification,created_at') // <- no status
-      .order('created_at', { ascending: false });
-
-    if (verifiedOnly) query = query.eq('verification', true);
-
-    // Simple client-side text filter after fetch (keeps DB query simple)
-    const { data, error } = await query;
-
-    if (error) {
-      setErrorMsg(error.message);
-      setProperties([]);
-    } else {
-      const rows = (data ?? []) as PropertyRow[];
-      const filtered =
-        q.trim().length === 0
-          ? rows
-          : rows.filter((r) => {
-              const hay = `${r.title ?? ''} ${r.city ?? ''} ${r.state ?? ''}`.toLowerCase();
-              return hay.includes(q.toLowerCase());
-            });
-      setProperties(filtered);
-    }
-
-    setLoading(false);
-  };
 
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('id,title,city,state,hero_url,created_at,verification')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading properties:', error);
+        setProperties([]);
+      } else {
+        const rows = (data ?? []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          city: p.city,
+          state: p.state,
+          hero_url: p.hero_url,
+          created_at: p.created_at,
+          status: p.verification ? 'VERIFIED' : 'PENDING',
+        })) as PropertyRow[];
+        setProperties(rows);
+      }
+      setLoading(false);
+    };
+
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verifiedOnly]);
-
-  // Re-run client filter on keystrokes without refetch
-  useEffect(() => {
-    // debounce could be added if needed; for now re-use load for simplicity
-    const t = setTimeout(load, 200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q]);
+  }, []);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold">Browse Properties</h1>
+    <main>
+      {/* Hero */}
+      <section className="bg-gray-50 border-b">
+        <div className="mx-auto max-w-6xl px-4 py-12">
+          <h1 className="text-4xl font-bold">
+            {t('home.headline')} <span className="text-green-700">{t('home.headline.trust')}</span>.
+          </h1>
+          <p className="mt-3 text-lg text-gray-600 max-w-2xl">
+            {t('home.lede')}
+          </p>
+          <div className="mt-6 flex gap-3">
+            <Link
+              href="/properties"
+              className="rounded bg-black px-5 py-2 text-white hover:bg-gray-800"
+            >
+              {t('home.cta.browse')}
+            </Link>
+            <Link
+              href="/seller"
+              className="rounded border px-5 py-2 hover:bg-gray-100"
+            >
+              {t('home.cta.list')}
+            </Link>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by title, city, state"
-            className="border rounded-lg px-3 py-2 text-sm w-64"
-          />
-          <label className="text-sm flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={verifiedOnly}
-              onChange={(e) => setVerifiedOnly(e.target.checked)}
-            />
-            <span>Verified only</span>
-          </label>
+          {/* Value Props */}
+          <div className="mt-12 grid gap-6 sm:grid-cols-3">
+            {[
+              { tkey: 'home.value.verification.t', dkey: 'home.value.verification.d' },
+              { tkey: 'home.value.transparency.t', dkey: 'home.value.transparency.d' },
+              { tkey: 'home.value.assistance.t', dkey: 'home.value.assistance.d' },
+            ].map(({ tkey, dkey }) => (
+              <div key={tkey} className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition">
+                <div className="text-lg font-semibold">{t(tkey)}</div>
+                <div className="mt-2 text-gray-600 text-sm">{t(dkey)}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      {loading ? (
-        <p>Loading…</p>
-      ) : errorMsg ? (
-        <p className="text-red-600 text-sm">Error: {errorMsg}</p>
-      ) : properties.length === 0 ? (
-        <p>No properties found.</p>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {properties.map((p) => (
-            <PropertyCard key={p.id} property={p} />
-          ))}
-        </div>
-      )}
+      {/* Latest Properties */}
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="text-2xl font-semibold mb-6">{t('home.latest')}</h2>
+        {loading ? (
+          <p>{t('home.loading')}</p>
+        ) : properties.length === 0 ? (
+          <p>{t('home.empty')}</p>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {properties.map((p) => (
+              <PropertyCard key={p.id} property={p} />
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }

@@ -1,27 +1,23 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function isAdmin(email?: string | null) {
-  const list = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return email ? list.includes(email.toLowerCase()) : false;
-}
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const provided = (url.searchParams.get('key') || '').trim();
 
-export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const isProd = process.env.NODE_ENV === 'production';
+  const expected = (process.env.OPS_TEMP_KEY || '').trim();
 
-  if (!user || !isAdmin(user.email)) {
-    return NextResponse.json({ ok: false, auth: false }, { status: 401 });
-  }
+  const ok = isProd
+    ? !!(expected && provided && provided === expected)
+    : true; // dev bypass
 
-  return NextResponse.json({ ok: true, auth: true, user: user.email });
+  return NextResponse.json({
+    ok,
+    provided: provided.length > 0,
+    expectedSet: isProd ? expected.length > 0 : true,
+    env: process.env.VERCEL_ENV || 'development',
+    devBypass: !isProd,
+  });
 }

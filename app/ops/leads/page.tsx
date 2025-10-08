@@ -16,58 +16,38 @@ export default function OpsLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const key =
-    typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('key')
-      : null;
-
-  const load = async () => {
-    if (!key) {
-      setErr('Unauthorized');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch(`/api/ops/leads?key=${encodeURIComponent(key)}`, { cache: 'no-store' });
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.error || res.statusText);
-      }
-      const j = await res.json();
-      setRows(j.rows || []);
-    } catch (e: any) {
-      setErr(e?.message || 'Failed to load leads');
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!key) {
-    return <div className="p-6 text-sm text-red-700">Unauthorized</div>;
+  function keyFromURL() {
+    if (typeof window === 'undefined') return '';
+    const u = new URL(window.location.href);
+    return (u.searchParams.get('key') || '').trim();
   }
 
-  return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Ops — Leads</h1>
-        <button onClick={load} className="px-3 py-1.5 border rounded hover:bg-gray-50 text-sm">
-          Refresh
-        </button>
-      </div>
+  useEffect(() => {
+    const key = keyFromURL();
+    (async () => {
+      try {
+        setLoading(true);
+        setErr(null);
+        const qs = key ? `?key=${encodeURIComponent(key)}` : '';
+        const res = await fetch(`/api/ops/leads${qs}`, { cache: 'no-store' });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body?.error || res.statusText);
+        setRows(body.rows || []);
+      } catch (e: any) {
+        setErr(e?.message || 'Failed to load leads');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
+  return (
+    <div className="p-2">
+      <h1 className="text-2xl font-semibold mb-4">Ops — Leads</h1>
       {loading ? (
         <p>Loading…</p>
       ) : err ? (
-        <div className="text-sm text-red-700">Error: {err}</div>
+        <div className="text-sm text-red-700">{err}</div>
       ) : rows.length === 0 ? (
         <p>No leads yet.</p>
       ) : (
@@ -85,19 +65,12 @@ export default function OpsLeadsPage() {
           <tbody>
             {rows.map((r) => (
               <tr key={r.id}>
-                <td className="px-4 py-2 border">
-                  {r.created_at ? new Date(r.created_at).toLocaleString() : '-'}
-                </td>
+                <td className="px-4 py-2 border">{r.created_at ? new Date(r.created_at).toLocaleString() : '-'}</td>
                 <td className="px-4 py-2 border">{r.full_name || '-'}</td>
                 <td className="px-4 py-2 border">{r.phone || '-'}</td>
                 <td className="px-4 py-2 border">
                   {r.property ? (
-                    <a
-                      className="text-blue-700 hover:underline"
-                      href={`/properties/${r.property.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <a className="text-blue-700 hover:underline" href={`/properties/${r.property.id}`} target="_blank" rel="noreferrer">
                       {r.property.title || r.property.id}
                     </a>
                   ) : (

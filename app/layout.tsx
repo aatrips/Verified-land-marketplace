@@ -1,7 +1,7 @@
 // app/layout.tsx
 import './globals.css';
 import type { Metadata } from 'next';
-import Providers from './providers';
+import Providers from './providers';   // ✅ keep only this one
 import NavBar from '@/components/NavBar';
 
 export const metadata: Metadata = {

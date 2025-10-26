@@ -7,6 +7,11 @@ import { useI18n } from '@/lib/i18n';
 export default function NavBar() {
   const { lang, setLang, t } = useI18n();
 
+  // Only show OPS link if explicitly enabled (safe for client: NEXT_PUBLIC_*)
+  const showOps = typeof process.env.NEXT_PUBLIC_SHOW_OPS === 'string'
+    ? process.env.NEXT_PUBLIC_SHOW_OPS === '1'
+    : false;
+
   return (
     <header className="border-b bg-white">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
@@ -23,10 +28,24 @@ export default function NavBar() {
         </Link>
 
         <nav className="flex items-center gap-5 text-sm">
-          <Link href="/properties" className="hover:underline">{t('nav.browse')}</Link>
-          <Link href="/seller" className="hover:underline">{t('nav.listProperty')}</Link>
-          <Link href="/about" className="hover:underline">{t('nav.about')}</Link>
-          <Link href="/ops/leads" className="hover:underline">{t('nav.ops')}</Link>
+          <Link href="/browse" className="hover:underline">
+            {t('nav.browse')}
+          </Link>
+
+          <Link href="/seller" className="hover:underline">
+            {t('nav.listProperty')}
+          </Link>
+
+          <Link href="/about" className="hover:underline">
+            {t('nav.about')}
+          </Link>
+
+          {/* Hidden by default; enable by setting NEXT_PUBLIC_SHOW_OPS=1 */}
+          {showOps && (
+            <Link href="/ops/leads" className="hover:underline">
+              {t('nav.ops')}
+            </Link>
+          )}
 
           <button
             onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}

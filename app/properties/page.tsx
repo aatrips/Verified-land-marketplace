@@ -53,8 +53,9 @@ export default function Home() {
             {t('home.lede')}
           </p>
           <div className="mt-6 flex gap-3">
+            {/* FIX: route to the actual browse page */}
             <Link
-              href="/properties"
+              href="/browse"
               className="rounded bg-black px-5 py-2 text-white hover:bg-gray-800"
             >
               {t('home.cta.browse')}

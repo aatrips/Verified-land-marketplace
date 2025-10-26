@@ -3,12 +3,15 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import PropertyCard, { PropertyRow } from '@/components/PropertyCard';
 import { useI18n } from '@/lib/i18n';
 
 export default function Home() {
+  const router = useRouter();
   const { t } = useI18n();
+
   const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -41,20 +44,31 @@ export default function Home() {
     load();
   }, []);
 
+  // Ensures navigation even if something intercepts the anchor click
+  const handleBrowseClick = (e: React.MouseEvent) => {
+    try {
+      router.push('/browse');
+    } catch {
+      window.location.href = '/browse';
+    }
+  };
+
   return (
     <main>
       {/* Hero */}
       <section className="bg-gray-50 border-b">
         <div className="mx-auto max-w-6xl px-4 py-12">
           <h1 className="text-4xl font-bold">
-            {t('home.headline')} <span className="text-green-700">{t('home.headline.trust')}</span>.
+            {t('home.headline')}{' '}
+            <span className="text-green-700">{t('home.headline.trust')}</span>.
           </h1>
           <p className="mt-3 text-lg text-gray-600 max-w-2xl">
             {t('home.lede')}
           </p>
           <div className="mt-6 flex gap-3">
             <Link
-              href="/properties"
+              href="/browse"
+              onClick={handleBrowseClick}
               className="rounded bg-black px-5 py-2 text-white hover:bg-gray-800"
             >
               {t('home.cta.browse')}
@@ -70,23 +84,11 @@ export default function Home() {
           {/* Value Props */}
           <div className="mt-12 grid gap-6 sm:grid-cols-3">
             {[
-              {
-                tkey: 'home.value.verification.t',
-                dkey: 'home.value.verification.d',
-              },
-              {
-                tkey: 'home.value.transparency.t',
-                dkey: 'home.value.transparency.d',
-              },
-              {
-                tkey: 'home.value.assistance.t',
-                dkey: 'home.value.assistance.d',
-              },
+              { tkey: 'home.value.verification.t', dkey: 'home.value.verification.d' },
+              { tkey: 'home.value.transparency.t', dkey: 'home.value.transparency.d' },
+              { tkey: 'home.value.assistance.t', dkey: 'home.value.assistance.d' },
             ].map(({ tkey, dkey }) => (
-              <div
-                key={tkey}
-                className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition"
-              >
+              <div key={tkey} className="rounded-xl border bg-white p-6 shadow-sm hover:shadow-md transition">
                 <div className="text-lg font-semibold">{t(tkey)}</div>
                 <div className="mt-2 text-gray-600 text-sm">{t(dkey)}</div>
               </div>

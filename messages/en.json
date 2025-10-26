@@ -1,0 +1,29 @@
+{
+    "home": {
+      "headline": "Find verified land",
+      "headline.trust": "you can trust",
+      "lede": "Discover transparent listings with document checks.",
+      "cta": { "browse": "Browse now", "list": "List your property" },
+      "latest": "Latest Properties",
+      "loading": "Loading…",
+      "empty": "No properties yet.",
+      "value": {
+        "verification": { "t": "Verification", "d": "Independent checks to reduce risk." },
+        "transparency": { "t": "Transparency", "d": "Prices, documents and history in one place." },
+        "assistance": { "t": "Assistance", "d": "We’re with you end-to-end." }
+      }
+    },
+    "about": {
+      "title": "About BuyersChoice",
+      "p1": "We’re building India’s most trusted marketplace for land.",
+      "p2": "Every listing passes through standard checks for peace of mind.",
+      "p3": "From shortlisting to registration, we support you throughout.",
+      "list": {
+        "title": "What makes us different",
+        "trust": "Document-first trust layer",
+        "end2end": "End-to-end support",
+        "aftercare": "After-sales assistance"
+      }
+    }
+  }
+  
